@@ -14,8 +14,9 @@
   <div class="auth-card">
     <h1>회원가입</h1>
     <form id="register-form">
-      <label>이메일
-        <input type="email" id="email" required autocomplete="email" />
+      <label>아이디 <span class="optional">(영문/숫자/-/_ 3~20자)</span>
+        <input type="text" id="username" required pattern="[a-zA-Z0-9_-]{3,20}"
+               autocomplete="username" placeholder="예: gwaedam_writer" />
       </label>
       <label>비밀번호 (6자 이상)
         <input type="password" id="password" required minlength="6" autocomplete="new-password" />
@@ -23,7 +24,7 @@
       <label>비밀번호 확인
         <input type="password" id="password2" required minlength="6" autocomplete="new-password" />
       </label>
-      <p class="hint">가입한 계정으로 작성하는 모든 문서·댓글은 다른 이용자에게 "이름"으로만 표시됩니다.</p>
+      <p class="hint">가입한 계정으로 작성하는 모든 문서·댓글은 다른 이용자에게 "이름"으로만 표시됩니다. 이메일을 받지 않으므로 비밀번호를 잊으면 이메일로 재설정할 수 없으니 잘 기억해두세요.</p>
       <p id="error-msg" class="error-msg" hidden></p>
       <button type="submit" class="primary-button">가입하기</button>
     </form>
@@ -32,7 +33,13 @@
 </main>
 
 <script type="module">
-  import { auth, createUserWithEmailAndPassword, ensureUserProfile } from "./firebase-init.js";
+  import {
+    auth,
+    createUserWithEmailAndPassword,
+    ensureUserProfile,
+    isValidUsername,
+    usernameToEmail,
+  } from "./firebase-init.js";
   import { mountHeader } from "./common.js";
 
   mountHeader({
@@ -44,13 +51,24 @@
   const form = document.getElementById("register-form");
   const errorMsg = document.getElementById("error-msg");
 
+  const ERROR_MESSAGES = {
+    "auth/email-already-in-use": "이미 사용 중인 아이디입니다.",
+    "auth/invalid-email": "아이디 형식이 올바르지 않습니다. (영문/숫자/-/_ 3~20자)",
+    "auth/weak-password": "비밀번호는 6자 이상이어야 합니다.",
+  };
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     errorMsg.hidden = true;
-    const email = document.getElementById("email").value.trim();
+    const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value;
     const password2 = document.getElementById("password2").value;
 
+    if (!isValidUsername(username)) {
+      errorMsg.textContent = "아이디는 영문/숫자/-/_ 3~20자로 입력해주세요.";
+      errorMsg.hidden = false;
+      return;
+    }
     if (password !== password2) {
       errorMsg.textContent = "비밀번호가 일치하지 않습니다.";
       errorMsg.hidden = false;
@@ -58,11 +76,11 @@
     }
 
     try {
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      const cred = await createUserWithEmailAndPassword(auth, usernameToEmail(username), password);
       await ensureUserProfile(cred.user);
       location.href = "index.html";
     } catch (err) {
-      errorMsg.textContent = "가입에 실패했습니다. (" + (err.code || "오류") + ")";
+      errorMsg.textContent = ERROR_MESSAGES[err.code] || "가입에 실패했습니다. 잠시 후 다시 시도해주세요.";
       errorMsg.hidden = false;
     }
   });

@@ -14,8 +14,8 @@
   <div class="auth-card">
     <h1>로그인</h1>
     <form id="login-form">
-      <label>이메일
-        <input type="email" id="email" required autocomplete="email" />
+      <label>아이디
+        <input type="text" id="username" required autocomplete="username" />
       </label>
       <label>비밀번호
         <input type="password" id="password" required autocomplete="current-password" />
@@ -28,7 +28,7 @@
 </main>
 
 <script type="module">
-  import { auth, signInWithEmailAndPassword } from "./firebase-init.js";
+  import { auth, signInWithEmailAndPassword, usernameToEmail } from "./firebase-init.js";
   import { mountHeader } from "./common.js";
 
   mountHeader({
@@ -46,14 +46,14 @@
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     errorMsg.hidden = true;
-    const email = document.getElementById("email").value.trim();
+    const username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value;
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, usernameToEmail(username), password);
       const params = new URLSearchParams(location.search);
       location.href = params.get("next") || "index.html";
     } catch (err) {
-      errorMsg.textContent = "로그인에 실패했습니다. 이메일/비밀번호를 확인해주세요.";
+      errorMsg.textContent = "로그인에 실패했습니다. 아이디/비밀번호를 확인해주세요.";
       errorMsg.hidden = false;
     }
   });
