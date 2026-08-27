@@ -1,0 +1,63 @@
+rules_version = '2';
+
+// "종말예언 : 어둠탐사기록" 괴담 문서 작성 사이트 Firestore 보안 규칙
+// Firebase 콘솔 > Firestore Database > 규칙 탭에 이 내용을 그대로 붙여넣으세요.
+// (eye/응시 프로젝트와 Firebase 프로젝트를 공유하므로, 이 규칙은 이 사이트가 쓰는
+//  users / counters / documents 컬렉션에만 영향을 줍니다. 기존 eye 프로젝트가
+//  다른 컬렉션 이름을 쓰고 있다면 서로 간섭하지 않습니다.)
+
+function isSignedIn() {
+  return request.auth != null;
+}
+
+function isAdmin() {
+  return isSignedIn() &&
+    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+}
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 유저 프로필: 관리자만 다른 유저의 식별 번호를 볼 수 있도록,
+    // 본인 문서 또는 관리자만 읽을 수 있게 제한한다.
+    match /users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if isSignedIn() && request.auth.uid == uid
+                    && request.resource.data.role == 'user';
+      // 본인은 role/number/banned를 스스로 바꿀 수 없고, 관리자만 변경 가능
+      allow update: if isSignedIn() && isAdmin();
+    }
+
+    // 가입 순번 카운터 (트랜잭션으로 1씩 증가)
+    match /counters/{counterId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    // 괴담 문서
+    match /documents/{docId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+                    && request.resource.data.authorUid == request.auth.uid;
+      allow update, delete: if isSignedIn()
+                    && (resource.data.authorUid == request.auth.uid || isAdmin());
+
+      // 추천(좋아요): 문서 ID = 유저 uid, 1인 1추천
+      match /likes/{uid} {
+        allow read: if isSignedIn();
+        allow create, delete: if isSignedIn() && request.auth.uid == uid;
+        allow update: if false;
+      }
+
+      // 댓글
+      match /comments/{commentId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn()
+                      && request.resource.data.authorUid == request.auth.uid;
+        allow update: if false;
+        allow delete: if isSignedIn()
+                      && (resource.data.authorUid == request.auth.uid || isAdmin());
+      }
+    }
+  }
+}

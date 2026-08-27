@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>문서 - 종말예언 : 어둠탐사기록</title>
+<link rel="icon" href="logo.png" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="app-header"></div>
+
+<main class="view-page">
+  <article id="doc-article" class="paper">
+    <p class="loading">불러오는 중...</p>
+  </article>
+
+  <section class="like-section">
+    <button id="like-btn" class="like-button">추천 <span id="like-count">0</span></button>
+    <span id="doc-owner-actions" class="owner-actions" hidden>
+      <a id="edit-link" href="#">수정</a>
+    </span>
+  </section>
+
+  <section class="comment-section">
+    <h2>댓글 <span id="comment-count">0</span></h2>
+    <form id="comment-form">
+      <textarea id="comment-input" placeholder="댓글을 남기세요" required></textarea>
+      <button type="submit" class="primary-button">등록</button>
+    </form>
+    <ul id="comment-list" class="comment-list"></ul>
+  </section>
+</main>
+
+<script type="module">
+  import { getUserProfile, isAdminProfile } from "./firebase-init.js";
+  import { mountHeader, displayAuthorName, formatDate, escapeHtml } from "./common.js";
+  import {
+    getDocument,
+    getLikeCount,
+    hasUserLiked,
+    setLiked,
+    listComments,
+    addComment,
+    deleteComment,
+    getCommentCount,
+  } from "./docs.js";
+  import { sanitizeHtml } from "./sanitize.js";
+
+  const params = new URLSearchParams(location.search);
+  const docId = params.get("id");
+
+  let currentUser = null;
+  let currentProfile = null;
+  let liked = false;
+
+  const article = document.getElementById("doc-article");
+  const likeBtn = document.getElementById("like-btn");
+  const likeCountEl = document.getElementById("like-count");
+  const commentCountEl = document.getElementById("comment-count");
+  const commentForm = document.getElementById("comment-form");
+  const commentInput = document.getElementById("comment-input");
+  const commentList = document.getElementById("comment-list");
+  const ownerActions = document.getElementById("doc-owner-actions");
+  const editLink = document.getElementById("edit-link");
+
+  const profileCache = new Map();
+  async function profileFor(uid) {
+    if (!profileCache.has(uid)) {
+      profileCache.set(uid, await getUserProfile(uid).catch(() => null));
+    }
+    return profileCache.get(uid);
+  }
+
+  mountHeader({
+    requireAuth: true,
+    onReady: async (user, profile) => {
+      currentUser = user;
+      currentProfile = profile;
+      if (!docId) {
+        article.innerHTML = '<p class="empty">잘못된 문서 주소입니다.</p>';
+        return;
+      }
+      await renderDocument();
+      await renderLikeState();
+      await renderComments();
+    },
+  });
+
+  async function renderDocument() {
+    const docData = await getDocument(docId);
+    if (!docData) {
+      article.innerHTML = '<p class="empty">삭제되었거나 존재하지 않는 문서입니다.</p>';
+      likeBtn.hidden = true;
+      commentForm.hidden = true;
+      return;
+    }
+    const authorProfile = await profileFor(docData.authorUid);
+    const author = displayAuthorName(currentProfile, authorProfile);
+
+    article.innerHTML = `
+      ${docData.code ? `<div class="doc-code">${escapeHtml(docData.code)}</div>` : ""}
+      <h1 class="doc-title">${escapeHtml(docData.title || "(제목 없음)")}</h1>
+      <div class="doc-meta">
+        <span>${escapeHtml(author)}</span>
+        <span>${formatDate(docData.createdAt)}</span>
+      </div>
+      <div class="doc-body">${sanitizeHtml(docData.bodyHtml || "")}</div>
+    `;
+
+    const canEdit = docData.authorUid === currentUser.uid || isAdminProfile(currentProfile);
+    if (canEdit) {
+      ownerActions.hidden = false;
+      editLink.href = `write.html?id=${encodeURIComponent(docId)}`;
+    }
+  }
+
+  async function renderLikeState() {
+    const [count, mine] = await Promise.all([
+      getLikeCount(docId),
+      hasUserLiked(docId, currentUser.uid),
+    ]);
+    liked = mine;
+    likeCountEl.textContent = count;
+    likeBtn.classList.toggle("active", liked);
+  }
+
+  likeBtn.addEventListener("click", async () => {
+    likeBtn.disabled = true;
+    try {
+      await setLiked(docId, currentUser.uid, !liked);
+      await renderLikeState();
+    } finally {
+      likeBtn.disabled = false;
+    }
+  });
+
+  async function renderComments() {
+    const [comments, count] = await Promise.all([listComments(docId), getCommentCount(docId)]);
+    commentCountEl.textContent = count;
+
+    if (comments.length === 0) {
+      commentList.innerHTML = '<li class="empty">아직 댓글이 없습니다.</li>';
+      return;
+    }
+
+    const items = await Promise.all(
+      comments.map(async (c) => {
+        const authorProfile = await profileFor(c.authorUid);
+        const author = displayAuthorName(currentProfile, authorProfile);
+        const canDelete = c.authorUid === currentUser.uid || isAdminProfile(currentProfile);
+        return `
+          <li class="comment-item" data-id="${c.id}">
+            <div class="comment-meta">
+              <span>${escapeHtml(author)}</span>
+              <span>${formatDate(c.createdAt)}</span>
+              ${canDelete ? `<button class="link-button comment-delete" data-id="${c.id}">삭제</button>` : ""}
+            </div>
+            <p class="comment-text">${escapeHtml(c.text)}</p>
+          </li>
+        `;
+      })
+    );
+    commentList.innerHTML = items.join("");
+
+    commentList.querySelectorAll(".comment-delete").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("댓글을 삭제하시겠습니까?")) return;
+        await deleteComment(docId, btn.dataset.id);
+        await renderComments();
+      });
+    });
+  }
+
+  commentForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = commentInput.value.trim();
+    if (!text) return;
+    const submitBtn = commentForm.querySelector("button");
+    submitBtn.disabled = true;
+    try {
+      await addComment(docId, { text, authorUid: currentUser.uid });
+      commentInput.value = "";
+      await renderComments();
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

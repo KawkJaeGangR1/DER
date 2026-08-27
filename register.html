@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>회원가입 - 종말예언 : 어둠탐사기록</title>
+<link rel="icon" href="logo.png" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="app-header"></div>
+
+<main class="auth-page">
+  <div class="auth-card">
+    <h1>회원가입</h1>
+    <form id="register-form">
+      <label>이메일
+        <input type="email" id="email" required autocomplete="email" />
+      </label>
+      <label>비밀번호 (6자 이상)
+        <input type="password" id="password" required minlength="6" autocomplete="new-password" />
+      </label>
+      <label>비밀번호 확인
+        <input type="password" id="password2" required minlength="6" autocomplete="new-password" />
+      </label>
+      <p class="hint">가입한 계정으로 작성하는 모든 문서·댓글은 다른 이용자에게 "이름"으로만 표시됩니다.</p>
+      <p id="error-msg" class="error-msg" hidden></p>
+      <button type="submit" class="primary-button">가입하기</button>
+    </form>
+    <p class="auth-switch">이미 계정이 있으신가요? <a href="login.html">로그인</a></p>
+  </div>
+</main>
+
+<script type="module">
+  import { auth, createUserWithEmailAndPassword, ensureUserProfile } from "./firebase-init.js";
+  import { mountHeader } from "./common.js";
+
+  mountHeader({
+    onReady: (user) => {
+      if (user) location.href = "index.html";
+    },
+  });
+
+  const form = document.getElementById("register-form");
+  const errorMsg = document.getElementById("error-msg");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorMsg.hidden = true;
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const password2 = document.getElementById("password2").value;
+
+    if (password !== password2) {
+      errorMsg.textContent = "비밀번호가 일치하지 않습니다.";
+      errorMsg.hidden = false;
+      return;
+    }
+
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await ensureUserProfile(cred.user);
+      location.href = "index.html";
+    } catch (err) {
+      errorMsg.textContent = "가입에 실패했습니다. (" + (err.code || "오류") + ")";
+      errorMsg.hidden = false;
+    }
+  });
+</script>
+</body>
+</html>

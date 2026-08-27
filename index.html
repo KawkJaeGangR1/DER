@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>종말예언 : 어둠탐사기록</title>
+<link rel="icon" href="logo.png" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="app-header"></div>
+
+<main class="list-page">
+  <div class="list-page-head">
+    <h1>어둠탐사기록 · 괴담 문서</h1>
+    <p class="sub">기록된 괴담들을 열람하고, 새로운 괴담을 문서로 남기세요.</p>
+  </div>
+  <div id="doc-list" class="doc-list">
+    <p class="loading">불러오는 중...</p>
+  </div>
+</main>
+
+<script type="module">
+  import { getUserProfile } from "./firebase-init.js";
+  import { mountHeader, displayAuthorName, formatDate, escapeHtml } from "./common.js";
+  import { listDocuments, getLikeCount, getCommentCount } from "./docs.js";
+
+  let viewerProfile = null;
+
+  mountHeader({
+    requireAuth: true,
+    onReady: async (user, profile) => {
+      viewerProfile = profile;
+      await renderList();
+    },
+  });
+
+  const profileCache = new Map();
+  async function profileFor(uid) {
+    if (!profileCache.has(uid)) {
+      profileCache.set(uid, await getUserProfile(uid).catch(() => null));
+    }
+    return profileCache.get(uid);
+  }
+
+  async function renderList() {
+    const host = document.getElementById("doc-list");
+    const docs = await listDocuments();
+
+    if (docs.length === 0) {
+      host.innerHTML = '<p class="empty">아직 기록된 괴담이 없습니다. 첫 문서를 작성해보세요.</p>';
+      return;
+    }
+
+    const cards = await Promise.all(
+      docs.map(async (d) => {
+        const [authorProfile, likeCount, commentCount] = await Promise.all([
+          profileFor(d.authorUid),
+          getLikeCount(d.id).catch(() => 0),
+          getCommentCount(d.id).catch(() => 0),
+        ]);
+        const author = displayAuthorName(viewerProfile, authorProfile);
+        return `
+          <a class="doc-card" href="view.html?id=${encodeURIComponent(d.id)}">
+            ${d.code ? `<div class="doc-code">${escapeHtml(d.code)}</div>` : ""}
+            <h2 class="doc-title">${escapeHtml(d.title || "(제목 없음)")}</h2>
+            <div class="doc-meta">
+              <span>${escapeHtml(author)}</span>
+              <span>${formatDate(d.createdAt)}</span>
+              <span>추천 ${likeCount}</span>
+              <span>댓글 ${commentCount}</span>
+            </div>
+          </a>
+        `;
+      })
+    );
+
+    host.innerHTML = cards.join("");
+  }
+</script>
+</body>
+</html>

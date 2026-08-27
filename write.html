@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>문서 작성 - 종말예언 : 어둠탐사기록</title>
+<link rel="icon" href="logo.png" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="app-header"></div>
+
+<main class="write-page">
+  <h1 id="write-heading">괴담 문서 작성</h1>
+
+  <div class="field-row">
+    <label class="field-label">식별 코드 <span class="optional">(선택, 예: Qterw-E-513)</span>
+      <input type="text" id="doc-code" placeholder="Qterw-E-513" />
+    </label>
+  </div>
+
+  <div class="field-row">
+    <label class="field-label">제목
+      <input type="text" id="doc-title" placeholder="괴담 제목" required />
+    </label>
+  </div>
+
+  <div class="editor-toolbar" role="toolbar" aria-label="서식 도구">
+    <button type="button" data-cmd="bold" title="굵게"><b>B</b></button>
+    <button type="button" data-cmd="italic" title="기울임"><i>I</i></button>
+    <button type="button" data-cmd="red" title="붉은색">A</button>
+    <button type="button" data-cmd="redact" title="검열(■)">■</button>
+    <button type="button" data-cmd="removeFormat" title="서식 지우기">지우기</button>
+  </div>
+
+  <div id="doc-body" class="doc-editor paper" contenteditable="true"
+       data-placeholder="여기에 괴담 문서를 작성하세요..."></div>
+
+  <p id="error-msg" class="error-msg" hidden></p>
+
+  <div class="write-actions">
+    <button id="save-btn" class="primary-button">저장</button>
+    <button id="delete-btn" class="danger-button" hidden>이 문서 삭제</button>
+  </div>
+</main>
+
+<script type="module">
+  import { isAdminProfile } from "./firebase-init.js";
+  import { mountHeader } from "./common.js";
+  import { getDocument, createDocument, updateDocument, deleteDocument } from "./docs.js";
+  import { sanitizeHtml } from "./sanitize.js";
+
+  const params = new URLSearchParams(location.search);
+  const editingId = params.get("id");
+
+  const titleInput = document.getElementById("doc-title");
+  const codeInput = document.getElementById("doc-code");
+  const bodyEl = document.getElementById("doc-body");
+  const errorMsg = document.getElementById("error-msg");
+  const saveBtn = document.getElementById("save-btn");
+  const deleteBtn = document.getElementById("delete-btn");
+  const heading = document.getElementById("write-heading");
+
+  let currentUser = null;
+  let currentProfile = null;
+
+  document.execCommand("styleWithCSS", false, true);
+
+  mountHeader({
+    requireAuth: true,
+    onReady: async (user, profile) => {
+      currentUser = user;
+      currentProfile = profile;
+      if (editingId) {
+        await loadForEdit();
+      }
+    },
+  });
+
+  async function loadForEdit() {
+    heading.textContent = "괴담 문서 수정";
+    const docData = await getDocument(editingId);
+    if (!docData) {
+      errorMsg.textContent = "문서를 찾을 수 없습니다.";
+      errorMsg.hidden = false;
+      saveBtn.disabled = true;
+      return;
+    }
+    const canEdit = docData.authorUid === currentUser.uid || isAdminProfile(currentProfile);
+    if (!canEdit) {
+      location.href = `view.html?id=${encodeURIComponent(editingId)}`;
+      return;
+    }
+    titleInput.value = docData.title || "";
+    codeInput.value = docData.code || "";
+    bodyEl.innerHTML = docData.bodyHtml || "";
+    deleteBtn.hidden = false;
+  }
+
+  document.querySelectorAll(".editor-toolbar button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      bodyEl.focus();
+      const cmd = btn.dataset.cmd;
+      if (cmd === "red") {
+        document.execCommand("foreColor", false, "#c0392b");
+      } else if (cmd === "redact") {
+        applyRedact();
+      } else {
+        document.execCommand(cmd, false, null);
+      }
+    });
+  });
+
+  function applyRedact() {
+    const sel = window.getSelection();
+    if (!sel.rangeCount || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    const text = range.toString();
+    if (!text.trim()) return;
+    const span = document.createElement("span");
+    span.className = "redact";
+    span.textContent = "■".repeat(text.length);
+    range.deleteContents();
+    range.insertNode(span);
+    range.setStartAfter(span);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  saveBtn.addEventListener("click", async () => {
+    errorMsg.hidden = true;
+    const title = titleInput.value.trim();
+    const code = codeInput.value.trim();
+    const bodyHtml = sanitizeHtml(bodyEl.innerHTML.trim());
+
+    if (!title) {
+      errorMsg.textContent = "제목을 입력해주세요.";
+      errorMsg.hidden = false;
+      return;
+    }
+    if (!bodyHtml || bodyEl.textContent.trim() === "") {
+      errorMsg.textContent = "본문을 입력해주세요.";
+      errorMsg.hidden = false;
+      return;
+    }
+
+    saveBtn.disabled = true;
+    try {
+      if (editingId) {
+        await updateDocument(editingId, { title, code, bodyHtml });
+        location.href = `view.html?id=${encodeURIComponent(editingId)}`;
+      } else {
+        const newId = await createDocument({ title, code, bodyHtml, authorUid: currentUser.uid });
+        location.href = `view.html?id=${encodeURIComponent(newId)}`;
+      }
+    } catch (err) {
+      errorMsg.textContent = "저장에 실패했습니다. 잠시 후 다시 시도해주세요.";
+      errorMsg.hidden = false;
+      saveBtn.disabled = false;
+    }
+  });
+
+  deleteBtn.addEventListener("click", async () => {
+    if (!confirm("이 문서를 정말 삭제하시겠습니까? 되돌릴 수 없습니다.")) return;
+    await deleteDocument(editingId);
+    location.href = "index.html";
+  });
+</script>
+</body>
+</html>

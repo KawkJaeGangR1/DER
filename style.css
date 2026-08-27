@@ -1,0 +1,457 @@
+/* 종말예언 : 어둠탐사기록 — 공용 스타일 */
+
+:root {
+  --bg: #0f0f10;
+  --bg-panel: #17171a;
+  --ink: #e8e6e3;
+  --ink-dim: #9a9a9a;
+  --accent: #c0392b;
+  --accent-dim: #7a2318;
+  --paper: #fbfaf7;
+  --paper-ink: #1a1a1a;
+  --paper-meta: #6b6b6b;
+  --border: #2a2a2d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Pretendard", "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+  min-height: 100%;
+}
+
+a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+/* ---------- 헤더 ---------- */
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 24px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+
+.brand-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: contain;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 0.92rem;
+}
+
+.nav-actions a,
+.nav-actions button {
+  color: var(--ink-dim);
+}
+
+.nav-actions a:hover,
+.nav-actions button:hover {
+  color: var(--accent);
+}
+
+.admin-badge {
+  background: var(--accent-dim);
+  color: #ffd9d2;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+/* ---------- 공용 버튼/폼 ---------- */
+.primary-button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.primary-button:hover {
+  background: #a5301f;
+}
+
+.primary-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.danger-button {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent-dim);
+  padding: 10px 18px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.error-msg {
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+
+.hint {
+  color: var(--ink-dim);
+  font-size: 0.85rem;
+}
+
+.loading,
+.empty {
+  color: var(--ink-dim);
+  font-style: italic;
+  text-align: center;
+  padding: 40px 0;
+}
+
+/* ---------- 인증 페이지 ---------- */
+.auth-page {
+  display: flex;
+  justify-content: center;
+  padding: 60px 20px;
+}
+
+.auth-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 32px;
+  width: 100%;
+  max-width: 380px;
+}
+
+.auth-card h1 {
+  margin-top: 0;
+  font-size: 1.3rem;
+}
+
+.auth-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.88rem;
+  color: var(--ink-dim);
+}
+
+.auth-card input {
+  background: #0c0c0d;
+  border: 1px solid var(--border);
+  color: var(--ink);
+  padding: 10px 12px;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+.auth-switch {
+  margin-top: 18px;
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+  text-align: center;
+}
+
+.auth-switch a {
+  color: var(--accent);
+}
+
+/* ---------- 문서 목록 ---------- */
+.list-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 20px 80px;
+}
+
+.list-page-head h1 {
+  margin-bottom: 4px;
+}
+
+.list-page-head .sub {
+  color: var(--ink-dim);
+  margin-top: 0;
+}
+
+.doc-list {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.doc-card {
+  display: block;
+  background: var(--paper);
+  color: var(--paper-ink);
+  border-radius: 6px;
+  padding: 20px 24px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.doc-card .doc-title {
+  margin: 4px 0 10px;
+}
+
+/* ---------- 문서 본문 (paper) ---------- */
+.paper {
+  background: var(--paper);
+  color: var(--paper-ink);
+  border-radius: 6px;
+  padding: 40px 44px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.4);
+  font-family: "Nanum Myeongjo", "Noto Serif KR", Georgia, serif;
+  line-height: 1.75;
+}
+
+.doc-code {
+  font-family: "Consolas", "Courier New", monospace;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.doc-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0 0 10px;
+}
+
+.doc-meta {
+  display: flex;
+  gap: 16px;
+  color: var(--paper-meta);
+  font-size: 0.85rem;
+  margin-bottom: 20px;
+  font-family: "Pretendard", "Noto Sans KR", sans-serif;
+}
+
+.doc-body p {
+  margin: 0 0 14px;
+}
+
+.doc-body .redact,
+.redact {
+  background: #111;
+  color: #111;
+  padding: 0 2px;
+  border-radius: 2px;
+  user-select: none;
+}
+
+/* ---------- 뷰 페이지 ---------- */
+.view-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 20px 80px;
+}
+
+.like-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 20px 0;
+}
+
+.like-button {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  padding: 10px 20px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.like-button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.owner-actions a {
+  color: var(--ink-dim);
+  font-size: 0.88rem;
+}
+
+.owner-actions a:hover {
+  color: var(--accent);
+}
+
+.comment-section h2 {
+  font-size: 1.05rem;
+  color: var(--ink-dim);
+  font-weight: 600;
+}
+
+#comment-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+#comment-input {
+  flex: 1;
+  min-height: 44px;
+  resize: vertical;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  padding: 10px 12px;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.comment-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.comment-item {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 16px;
+}
+
+.comment-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+  margin-bottom: 6px;
+}
+
+.comment-meta .link-button {
+  color: var(--accent);
+}
+
+.comment-text {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+/* ---------- 작성/편집 페이지 ---------- */
+.write-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 20px 80px;
+}
+
+.field-row {
+  margin-bottom: 16px;
+}
+
+.field-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.88rem;
+  color: var(--ink-dim);
+}
+
+.field-label .optional {
+  font-weight: 400;
+  color: var(--ink-dim);
+  font-size: 0.8rem;
+}
+
+.field-label input {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  padding: 10px 12px;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.editor-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.editor-toolbar button {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  min-width: 40px;
+  height: 36px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.editor-toolbar button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.doc-editor {
+  min-height: 320px;
+  outline: none;
+  font-family: "Nanum Myeongjo", "Noto Serif KR", Georgia, serif;
+  line-height: 1.75;
+}
+
+.doc-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--paper-meta);
+}
+
+.write-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+@media (max-width: 600px) {
+  .paper,
+  .doc-card {
+    padding: 24px 18px;
+  }
+  .header-inner {
+    padding: 14px 16px;
+  }
+}

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>로그인 - 종말예언 : 어둠탐사기록</title>
+<link rel="icon" href="logo.png" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="app-header"></div>
+
+<main class="auth-page">
+  <div class="auth-card">
+    <h1>로그인</h1>
+    <form id="login-form">
+      <label>이메일
+        <input type="email" id="email" required autocomplete="email" />
+      </label>
+      <label>비밀번호
+        <input type="password" id="password" required autocomplete="current-password" />
+      </label>
+      <p id="error-msg" class="error-msg" hidden></p>
+      <button type="submit" class="primary-button">로그인</button>
+    </form>
+    <p class="auth-switch">계정이 없으신가요? <a href="register.html">회원가입</a></p>
+  </div>
+</main>
+
+<script type="module">
+  import { auth, signInWithEmailAndPassword } from "./firebase-init.js";
+  import { mountHeader } from "./common.js";
+
+  mountHeader({
+    onReady: (user) => {
+      if (user) {
+        const params = new URLSearchParams(location.search);
+        location.href = params.get("next") || "index.html";
+      }
+    },
+  });
+
+  const form = document.getElementById("login-form");
+  const errorMsg = document.getElementById("error-msg");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorMsg.hidden = true;
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      const params = new URLSearchParams(location.search);
+      location.href = params.get("next") || "index.html";
+    } catch (err) {
+      errorMsg.textContent = "로그인에 실패했습니다. 이메일/비밀번호를 확인해주세요.";
+      errorMsg.hidden = false;
+    }
+  });
+</script>
+</body>
+</html>
