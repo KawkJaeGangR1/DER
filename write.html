@@ -36,6 +36,7 @@
   <div class="editor-toolbar" role="toolbar" aria-label="서식 도구">
     <button type="button" data-cmd="bold" title="굵게"><b>B</b></button>
     <button type="button" data-cmd="italic" title="기울임"><i>I</i></button>
+    <button type="button" data-cmd="strikeThrough" title="취소선"><s>S</s></button>
     <button type="button" data-cmd="red" title="붉은색">A</button>
     <button type="button" data-cmd="redact" title="검열(■)">■</button>
     <button type="button" data-cmd="removeFormat" title="서식 지우기">지우기</button>
@@ -73,7 +74,10 @@
   let currentUser = null;
   let currentProfile = null;
 
-  document.execCommand("styleWithCSS", false, true);
+  // styleWithCSS를 끄면 굵게/기울임/취소선이 <b>/<i>/<strike> 같은 일반 태그로 만들어진다.
+  // (이전에는 켜져 있어서 <span style="font-weight:bold">처럼 인라인 스타일로 만들어졌는데,
+  //  sanitizeHtml이 색상 스타일 외의 스타일은 걸러내면서 굵게 표시가 저장 시 통째로 사라졌음)
+  document.execCommand("styleWithCSS", false, false);
 
   CATEGORIES.forEach((c) => {
     const opt = document.createElement("option");

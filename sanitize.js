@@ -1,14 +1,18 @@
 // 문서 본문 HTML을 저장/출력하기 전에 허용된 태그·속성만 남기는 간단한 sanitizer.
-// 외부 라이브러리 없이, 에디터가 만들어내는 결과물(굵게/기울임/빨간색/■검열)만
+// 외부 라이브러리 없이, 에디터가 만들어내는 결과물(굵게/기울임/취소선/빨간색/■검열)만
 // 통과시키도록 화이트리스트 방식으로 구현한다.
 
-const ALLOWED_TAGS = new Set(["B", "STRONG", "I", "EM", "U", "SPAN", "FONT", "DIV", "P", "BR"]);
+const ALLOWED_TAGS = new Set([
+  "B", "STRONG", "I", "EM", "U", "S", "STRIKE", "SPAN", "FONT", "DIV", "P", "BR",
+]);
 
-// span/font에 남길 수 있는 인라인 스타일: 붉은색 텍스트만 허용
-function sanitizeStyle(styleValue) {
-  if (!styleValue) return "";
-  const colorMatch = /color\s*:\s*(#c0392b|#ff0000|red|rgb\(192,\s*57,\s*43\))/i.exec(styleValue);
-  return colorMatch ? "color:#c0392b;" : "";
+// span/font에 남길 수 있는 인라인 스타일: 붉은색 텍스트만 허용.
+// styleWithCSS 사용 여부·브라우저에 따라 "color:#c0392b;" 같은 style 속성 형태로 올 수도,
+// <font color="#c0392b">처럼 속성값 하나만 올 수도 있어서, "color:" 접두어 없이도 매칭되게 느슨하게 검사한다.
+function sanitizeStyle(rawValue) {
+  if (!rawValue) return "";
+  const isRed = /#c0392b|#ff0000|\bred\b|rgb\(\s*192\s*,\s*57\s*,\s*43\s*\)/i.test(rawValue);
+  return isRed ? "color:#c0392b;" : "";
 }
 
 function sanitizeNode(node, doc) {
@@ -31,7 +35,7 @@ function sanitizeNode(node, doc) {
     return frag;
   }
 
-  const outTag = tag === "FONT" ? "SPAN" : tag;
+  const outTag = tag === "FONT" ? "SPAN" : tag === "STRIKE" ? "S" : tag;
   const el = doc.createElement(outTag);
 
   if (outTag === "SPAN") {
