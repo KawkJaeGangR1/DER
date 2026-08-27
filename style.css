@@ -292,6 +292,29 @@ a {
   margin: 0 0 14px;
 }
 
+.paper ul,
+.paper ol {
+  margin: 0 0 14px;
+  padding-left: 1.6em;
+}
+
+.paper li {
+  margin-bottom: 4px;
+}
+
+.paper li > ul,
+.paper li > ol {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.paper blockquote {
+  margin: 0 0 14px;
+  padding-left: 14px;
+  border-left: 3px solid var(--paper-meta);
+  color: var(--paper-ink);
+}
+
 .doc-body .redact,
 .redact {
   background: #111;
@@ -434,8 +457,17 @@ a {
 
 .editor-toolbar {
   display: flex;
+  align-items: center;
   gap: 8px;
   margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  margin: 0 2px;
 }
 
 .editor-toolbar button {

@@ -39,6 +39,11 @@
     <button type="button" data-cmd="strikeThrough" title="취소선"><s>S</s></button>
     <button type="button" data-cmd="red" title="붉은색">A</button>
     <button type="button" data-cmd="redact" title="검열(■)">■</button>
+    <span class="toolbar-divider" aria-hidden="true"></span>
+    <button type="button" data-cmd="insertUnorderedList" title="글머리 기호(목록)">•</button>
+    <button type="button" data-cmd="outdent" title="내어쓰기">←</button>
+    <button type="button" data-cmd="indent" title="들여쓰기">→</button>
+    <span class="toolbar-divider" aria-hidden="true"></span>
     <button type="button" data-cmd="removeFormat" title="서식 지우기">지우기</button>
   </div>
 
@@ -55,7 +60,7 @@
 
 <script type="module">
   import { isAdminProfile } from "./firebase-init.js";
-  import { mountHeader, CATEGORIES } from "./common.js";
+  import { mountHeader, CATEGORIES, escapeHtml } from "./common.js";
   import { getDocument, createDocument, updateDocument, deleteDocument } from "./docs.js";
   import { sanitizeHtml } from "./sanitize.js";
 
@@ -142,6 +147,26 @@
     const insertText = "■".repeat(selectedLength || 1);
     document.execCommand("insertText", false, insertText);
   }
+
+  // 나무위키 등 다른 곳에서 복사해온 글을 붙여넣으면, 원본의 색상·링크·표 같은 서식은
+  // 버리고 이 사이트가 지원하는 서식(굵게/기울임/취소선/빨간색)만 남겨 자동으로 정리한다.
+  // 문단 구분은 최대한 유지하되, 완벽하게 원본 그대로 옮겨지진 않으니 붙여넣은 뒤 한 번
+  // 훑어보고 다듬는 걸 권장합니다.
+  bodyEl.addEventListener("paste", (e) => {
+    e.preventDefault();
+    const html = e.clipboardData && e.clipboardData.getData("text/html");
+    let cleaned;
+    if (html) {
+      cleaned = sanitizeHtml(html);
+    } else {
+      const text = e.clipboardData ? e.clipboardData.getData("text/plain") : "";
+      cleaned = text
+        .split(/\r?\n/)
+        .map((line) => `<p>${escapeHtml(line)}</p>`)
+        .join("");
+    }
+    document.execCommand("insertHTML", false, cleaned);
+  });
 
   saveBtn.addEventListener("click", async () => {
     errorMsg.hidden = true;
