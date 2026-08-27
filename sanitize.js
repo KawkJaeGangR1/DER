@@ -4,7 +4,7 @@
 
 const ALLOWED_TAGS = new Set([
   "B", "STRONG", "I", "EM", "U", "S", "STRIKE", "SPAN", "FONT", "DIV", "P", "BR",
-  "UL", "OL", "LI", "BLOCKQUOTE",
+  "UL", "OL", "LI", "BLOCKQUOTE", "HR",
 ]);
 
 // 내용째로 완전히 버려야 하는 태그(코드/스타일 소스가 텍스트로 새어 나오는 것을 막는다)

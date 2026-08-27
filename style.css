@@ -308,6 +308,12 @@ a {
   margin-bottom: 4px;
 }
 
+.paper hr {
+  border: none;
+  border-top: 1px dashed var(--paper-meta);
+  margin: 24px 0;
+}
+
 .paper blockquote {
   margin: 0 0 14px;
   padding-left: 14px;
