@@ -22,7 +22,7 @@
 
 <script type="module">
   import { getUserProfile } from "./firebase-init.js";
-  import { mountHeader, displayAuthorName, formatDate, escapeHtml } from "./common.js";
+  import { mountHeader, displayAuthorName, formatDate, escapeHtml, categoryBadge } from "./common.js";
   import { listDocuments, getLikeCount, getCommentCount } from "./docs.js";
 
   let viewerProfile = null;
@@ -62,6 +62,7 @@
         const author = displayAuthorName(viewerProfile, authorProfile);
         return `
           <a class="doc-card" href="view.html?id=${encodeURIComponent(d.id)}">
+            ${categoryBadge(d.category)}
             ${d.code ? `<div class="doc-code">${escapeHtml(d.code)}</div>` : ""}
             <h2 class="doc-title">${escapeHtml(d.title || "(제목 없음)")}</h2>
             <div class="doc-meta">

@@ -10,6 +10,21 @@ import {
 
 const SITE_TITLE = "종말예언 : 어둠탐사기록";
 
+// 문서 분류 태그(소속/출처 세력). write.html의 <select>와 목록/상세 페이지의 배지에서 공용으로 쓴다.
+export const CATEGORIES = ["백일몽 주식회사", "초자연 재난관리국", "무명찬란교"];
+
+const CATEGORY_CLASS = {
+  "백일몽 주식회사": "tag-baekilmong",
+  "초자연 재난관리국": "tag-jaenan",
+  "무명찬란교": "tag-mumyeong",
+};
+
+export function categoryBadge(category) {
+  if (!category) return "";
+  const cls = CATEGORY_CLASS[category] || "";
+  return `<span class="doc-tag ${cls}">${escapeHtml(category)}</span>`;
+}
+
 function headerMarkup() {
   return `
     <div class="header-inner">

@@ -34,7 +34,7 @@
 
 <script type="module">
   import { getUserProfile, isAdminProfile } from "./firebase-init.js";
-  import { mountHeader, displayAuthorName, formatDate, escapeHtml } from "./common.js";
+  import { mountHeader, displayAuthorName, formatDate, escapeHtml, categoryBadge } from "./common.js";
   import {
     getDocument,
     getLikeCount,
@@ -99,6 +99,7 @@
     const author = displayAuthorName(currentProfile, authorProfile);
 
     article.innerHTML = `
+      ${categoryBadge(docData.category)}
       ${docData.code ? `<div class="doc-code">${escapeHtml(docData.code)}</div>` : ""}
       <h1 class="doc-title">${escapeHtml(docData.title || "(제목 없음)")}</h1>
       <div class="doc-meta">

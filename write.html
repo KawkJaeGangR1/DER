@@ -14,8 +14,16 @@
   <h1 id="write-heading">괴담 문서 작성</h1>
 
   <div class="field-row">
-    <label class="field-label">식별 코드 <span class="optional">(선택, 예: Qterw-E-513)</span>
-      <input type="text" id="doc-code" placeholder="Qterw-E-513" />
+    <label class="field-label">분류
+      <select id="doc-category" required>
+        <option value="" disabled selected>분류를 선택하세요</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="field-row">
+    <label class="field-label">식별 코드 <span class="optional">(선택, 예: Qterw-A-37)</span>
+      <input type="text" id="doc-code" placeholder="Qterw-A-37" />
     </label>
   </div>
 
@@ -46,7 +54,7 @@
 
 <script type="module">
   import { isAdminProfile } from "./firebase-init.js";
-  import { mountHeader } from "./common.js";
+  import { mountHeader, CATEGORIES } from "./common.js";
   import { getDocument, createDocument, updateDocument, deleteDocument } from "./docs.js";
   import { sanitizeHtml } from "./sanitize.js";
 
@@ -55,6 +63,7 @@
 
   const titleInput = document.getElementById("doc-title");
   const codeInput = document.getElementById("doc-code");
+  const categorySelect = document.getElementById("doc-category");
   const bodyEl = document.getElementById("doc-body");
   const errorMsg = document.getElementById("error-msg");
   const saveBtn = document.getElementById("save-btn");
@@ -65,6 +74,13 @@
   let currentProfile = null;
 
   document.execCommand("styleWithCSS", false, true);
+
+  CATEGORIES.forEach((c) => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    categorySelect.appendChild(opt);
+  });
 
   mountHeader({
     requireAuth: true,
@@ -93,6 +109,7 @@
     }
     titleInput.value = docData.title || "";
     codeInput.value = docData.code || "";
+    if (docData.category) categorySelect.value = docData.category;
     bodyEl.innerHTML = docData.bodyHtml || "";
     deleteBtn.hidden = false;
   }
@@ -111,29 +128,29 @@
     });
   });
 
+  // 검열(■): 별도 <span>으로 감싸는 대신, 커서(또는 선택 영역) 위치에 일반 텍스트로
+  // ■ 문자를 삽입한다. 그냥 타이핑한 것과 동일하게 처리되어, 나중에 지우거나
+  // 다른 글자를 이어 써도 검은 박스 스타일이 남아있는 문제가 생기지 않는다.
   function applyRedact() {
     const sel = window.getSelection();
-    if (!sel.rangeCount || sel.isCollapsed) return;
-    const range = sel.getRangeAt(0);
-    const text = range.toString();
-    if (!text.trim()) return;
-    const span = document.createElement("span");
-    span.className = "redact";
-    span.textContent = "■".repeat(text.length);
-    range.deleteContents();
-    range.insertNode(span);
-    range.setStartAfter(span);
-    range.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(range);
+    if (!sel.rangeCount || !bodyEl.contains(sel.anchorNode)) return;
+    const selectedLength = sel.toString().length;
+    const insertText = "■".repeat(selectedLength || 1);
+    document.execCommand("insertText", false, insertText);
   }
 
   saveBtn.addEventListener("click", async () => {
     errorMsg.hidden = true;
     const title = titleInput.value.trim();
     const code = codeInput.value.trim();
+    const category = categorySelect.value;
     const bodyHtml = sanitizeHtml(bodyEl.innerHTML.trim());
 
+    if (!category) {
+      errorMsg.textContent = "분류를 선택해주세요.";
+      errorMsg.hidden = false;
+      return;
+    }
     if (!title) {
       errorMsg.textContent = "제목을 입력해주세요.";
       errorMsg.hidden = false;
@@ -148,10 +165,10 @@
     saveBtn.disabled = true;
     try {
       if (editingId) {
-        await updateDocument(editingId, { title, code, bodyHtml });
+        await updateDocument(editingId, { title, code, category, bodyHtml });
         location.href = `view.html?id=${encodeURIComponent(editingId)}`;
       } else {
-        const newId = await createDocument({ title, code, bodyHtml, authorUid: currentUser.uid });
+        const newId = await createDocument({ title, code, category, bodyHtml, authorUid: currentUser.uid });
         location.href = `view.html?id=${encodeURIComponent(newId)}`;
       }
     } catch (err) {

@@ -29,10 +29,11 @@ export async function getDocument(docId) {
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }
 
-export async function createDocument({ title, code, bodyHtml, authorUid }) {
+export async function createDocument({ title, code, category, bodyHtml, authorUid }) {
   const ref = await addDoc(documentsCol, {
     title,
     code: code || "",
+    category: category || "",
     bodyHtml,
     authorUid,
     createdAt: serverTimestamp(),
@@ -41,10 +42,11 @@ export async function createDocument({ title, code, bodyHtml, authorUid }) {
   return ref.id;
 }
 
-export async function updateDocument(docId, { title, code, bodyHtml }) {
+export async function updateDocument(docId, { title, code, category, bodyHtml }) {
   await updateDoc(doc(db, "documents", docId), {
     title,
     code: code || "",
+    category: category || "",
     bodyHtml,
     updatedAt: serverTimestamp(),
   });
