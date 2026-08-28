@@ -16,7 +16,10 @@
   </article>
 
   <section class="like-section">
-    <button id="like-btn" class="like-button">추천 <span id="like-count">0</span></button>
+    <div class="like-section-left">
+      <button id="like-btn" class="like-button">추천 <span id="like-count">0</span></button>
+      <a id="twitter-share" class="share-button" href="#" target="_blank" rel="noopener noreferrer">트위터에 공유</a>
+    </div>
     <span id="doc-owner-actions" class="owner-actions" hidden>
       <a id="edit-link" href="#">수정</a>
     </span>
@@ -63,6 +66,7 @@
   const commentList = document.getElementById("comment-list");
   const ownerActions = document.getElementById("doc-owner-actions");
   const editLink = document.getElementById("edit-link");
+  const twitterShare = document.getElementById("twitter-share");
 
   const profileCache = new Map();
   async function profileFor(uid) {
@@ -92,6 +96,7 @@
     if (!docData) {
       article.innerHTML = '<p class="empty">삭제되었거나 존재하지 않는 문서입니다.</p>';
       likeBtn.hidden = true;
+      twitterShare.hidden = true;
       commentForm.hidden = true;
       return;
     }
@@ -114,6 +119,9 @@
       ownerActions.hidden = false;
       editLink.href = `write.html?id=${encodeURIComponent(docId)}`;
     }
+
+    const shareText = `${docData.title || "괴담 문서"} | 종말예언 : 어둠탐사기록`;
+    twitterShare.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(location.href)}`;
   }
 
   async function renderLikeState() {

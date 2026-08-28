@@ -15,6 +15,12 @@
     <h1>어둠탐사기록 · 괴담 문서</h1>
     <p class="sub">기록된 괴담들을 열람하고, 새로운 괴담을 문서로 남기세요.</p>
   </div>
+
+  <div class="list-controls">
+    <input type="search" id="search-input" class="search-input" placeholder="제목으로 검색..." />
+    <div id="category-filters" class="category-filters"></div>
+  </div>
+
   <div id="doc-list" class="doc-list">
     <p class="loading">불러오는 중...</p>
   </div>
@@ -22,18 +28,53 @@
 
 <script type="module">
   import { getUserProfile } from "./firebase-init.js";
-  import { mountHeader, displayAuthorName, formatDate, escapeHtml, categoryBadge } from "./common.js";
+  import {
+    mountHeader,
+    displayAuthorName,
+    formatDate,
+    escapeHtml,
+    categoryBadge,
+    CATEGORIES,
+  } from "./common.js";
   import { listDocuments, getLikeCount, getCommentCount } from "./docs.js";
 
   let viewerProfile = null;
+  let allDocs = []; // 검색/필터는 서버에 다시 묻지 않고 한 번 받아온 목록을 그대로 걸러서 보여준다
+  let activeCategory = ""; // "" = 전체
+  let searchInput;
 
   mountHeader({
     requireAuth: true,
     onReady: async (user, profile) => {
       viewerProfile = profile;
-      await renderList();
+      await loadDocs();
+      renderFilteredList();
     },
   });
+
+  buildCategoryFilters();
+
+  searchInput = document.getElementById("search-input");
+  searchInput.addEventListener("input", renderFilteredList);
+
+  function buildCategoryFilters() {
+    const host = document.getElementById("category-filters");
+    const options = ["", ...CATEGORIES];
+    host.innerHTML = options
+      .map(
+        (c) =>
+          `<button type="button" class="filter-chip${c === "" ? " active" : ""}" data-category="${escapeHtml(c)}">${c === "" ? "전체" : escapeHtml(c)}</button>`
+      )
+      .join("");
+
+    host.querySelectorAll(".filter-chip").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        activeCategory = btn.dataset.category;
+        host.querySelectorAll(".filter-chip").forEach((b) => b.classList.toggle("active", b === btn));
+        renderFilteredList();
+      });
+    });
+  }
 
   const profileCache = new Map();
   async function profileFor(uid) {
@@ -43,40 +84,62 @@
     return profileCache.get(uid);
   }
 
-  async function renderList() {
-    const host = document.getElementById("doc-list");
+  // 문서 목록 + 표시에 필요한 부가 정보(작성자 표시명/추천 수/댓글 수)를 한 번만 불러와 캐시해둔다.
+  async function loadDocs() {
     const docs = await listDocuments();
-
-    if (docs.length === 0) {
-      host.innerHTML = '<p class="empty">아직 기록된 괴담이 없습니다. 첫 문서를 작성해보세요.</p>';
-      return;
-    }
-
-    const cards = await Promise.all(
+    allDocs = await Promise.all(
       docs.map(async (d) => {
         const [authorProfile, likeCount, commentCount] = await Promise.all([
           profileFor(d.authorUid),
           getLikeCount(d.id).catch(() => 0),
           getCommentCount(d.id).catch(() => 0),
         ]);
-        const author = displayAuthorName(viewerProfile, authorProfile);
-        return `
-          <a class="doc-card" href="view.html?id=${encodeURIComponent(d.id)}">
-            ${categoryBadge(d.category)}
-            ${d.code ? `<div class="doc-code">${escapeHtml(d.code)}</div>` : ""}
-            <h2 class="doc-title">${escapeHtml(d.title || "(제목 없음)")}</h2>
-            <div class="doc-meta">
-              <span>${escapeHtml(author)}</span>
-              <span>${formatDate(d.createdAt)}</span>
-              <span>추천 ${likeCount}</span>
-              <span>댓글 ${commentCount}</span>
-            </div>
-          </a>
-        `;
+        return {
+          ...d,
+          authorDisplay: displayAuthorName(viewerProfile, authorProfile),
+          likeCount,
+          commentCount,
+        };
       })
     );
+  }
 
-    host.innerHTML = cards.join("");
+  function cardHtml(d) {
+    return `
+      <a class="doc-card" href="view.html?id=${encodeURIComponent(d.id)}">
+        ${categoryBadge(d.category)}
+        ${d.code ? `<div class="doc-code">${escapeHtml(d.code)}</div>` : ""}
+        <h2 class="doc-title">${escapeHtml(d.title || "(제목 없음)")}</h2>
+        <div class="doc-meta">
+          <span>${escapeHtml(d.authorDisplay)}</span>
+          <span>${formatDate(d.createdAt)}</span>
+          <span>추천 ${d.likeCount}</span>
+          <span>댓글 ${d.commentCount}</span>
+        </div>
+      </a>
+    `;
+  }
+
+  function renderFilteredList() {
+    const host = document.getElementById("doc-list");
+    const keyword = searchInput.value.trim().toLowerCase();
+
+    const filtered = allDocs.filter((d) => {
+      const matchesCategory = !activeCategory || d.category === activeCategory;
+      const matchesKeyword = !keyword || (d.title || "").toLowerCase().includes(keyword);
+      return matchesCategory && matchesKeyword;
+    });
+
+    if (allDocs.length === 0) {
+      host.innerHTML = '<p class="empty">아직 기록된 괴담이 없습니다. 첫 문서를 작성해보세요.</p>';
+      return;
+    }
+    if (filtered.length === 0) {
+      host.innerHTML = '<p class="empty">조건에 맞는 문서가 없습니다.</p>';
+      return;
+    }
+
+    host.innerHTML = filtered.map(cardHtml).join("");
   }
 </script>
 </body>

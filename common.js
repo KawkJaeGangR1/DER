@@ -96,11 +96,17 @@ export function mountHeader({ requireAuth = false, onReady } = {}) {
 
 // 게시물/댓글에 표시할 작성자 이름: 일반 유저에게는 전부 "이름"으로 통일,
 // 관리자로 로그인한 경우에만 식별 번호를 함께 보여준다.
+// number 값의 타입을 엄격히 검사하지 않는다 — Firestore 콘솔에서 수동으로 값을 만졌을 때
+// 문자열("2")로 저장돼도 정상 표시되도록 값이 있는지만 확인한다.
 export function displayAuthorName(viewerProfile, authorProfile) {
-  if (isAdminProfile(viewerProfile) && authorProfile && typeof authorProfile.number === "number") {
-    return `이름 #${authorProfile.number}`;
+  if (!isAdminProfile(viewerProfile)) return "이름";
+  const number = authorProfile && authorProfile.number;
+  if (number !== undefined && number !== null && number !== "") {
+    return `이름 #${number}`;
   }
-  return "이름";
+  // 관리자에게는 프로필 문서 자체가 없거나 번호가 없는 경우를 구분해서 알려준다
+  // (예: 이 계정이 회원가입 시 users 문서 생성에 실패한 경우).
+  return "이름 (번호 없음)";
 }
 
 export function formatDate(ts) {
