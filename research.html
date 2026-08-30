@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>종말예언 : 어둠탐사기록</title>
+<title>곽과장의 연구기록 - 종말예언 : 어둠탐사기록</title>
 <link rel="icon" href="logo.png" />
 <link rel="stylesheet" href="style.css" />
 </head>
@@ -12,8 +12,9 @@
 
 <main class="list-page">
   <div class="list-page-head">
-    <h1>어둠탐사기록 · 괴담 문서</h1>
-    <p class="sub">기록된 괴담들을 열람하고, 새로운 괴담을 문서로 남기세요.</p>
+    <h1>곽과장의 연구기록</h1>
+    <p class="sub">백일몽 주식회사 내부에서만 열람되던 곽과장의 연구 기록. 작성은 관리자만 할 수 있습니다.</p>
+    <button id="write-research-btn" class="primary-button" hidden>연구기록 작성</button>
   </div>
 
   <div class="list-controls">
@@ -21,7 +22,6 @@
       <input type="search" id="search-input" class="search-input" placeholder="제목으로 검색..." />
       <select id="sort-select" class="sort-select"></select>
     </div>
-    <div id="category-filters" class="category-filters"></div>
   </div>
 
   <div id="doc-list" class="doc-list">
@@ -30,42 +30,43 @@
 </main>
 
 <script type="module">
-  import { getUserProfile } from "./firebase-init.js";
+  import { getUserProfile, isAdminProfile } from "./firebase-init.js";
   import {
     mountHeader,
     displayAuthorName,
     formatDate,
     escapeHtml,
     categoryBadges,
-    getDocCategories,
-    CATEGORIES,
     SORT_OPTIONS,
     sortDocs,
   } from "./common.js";
   import { listDocuments, getLikeCount, getCommentCount } from "./docs.js";
 
   let viewerProfile = null;
-  let allDocs = []; // 검색/필터/정렬은 서버에 다시 묻지 않고 한 번 받아온 목록을 그대로 걸러서 보여준다
-  let activeCategory = ""; // "" = 전체
+  let allDocs = [];
   let activeSort = "latest";
   let searchInput;
   let sortSelect;
+  const writeBtn = document.getElementById("write-research-btn");
 
   mountHeader({
     requireAuth: true,
     onReady: async (user, profile) => {
       viewerProfile = profile;
+      writeBtn.hidden = !isAdminProfile(profile);
       await loadDocs();
       renderFilteredList();
     },
   });
 
-  buildCategoryFilters();
-  buildSortSelect();
+  writeBtn.addEventListener("click", () => {
+    location.href = "write.html?board=gwak";
+  });
 
   searchInput = document.getElementById("search-input");
   searchInput.addEventListener("input", renderFilteredList);
 
+  buildSortSelect();
   function buildSortSelect() {
     sortSelect = document.getElementById("sort-select");
     sortSelect.innerHTML = SORT_OPTIONS.map((o) => `<option value="${o.key}">${o.label}</option>`).join("");
@@ -73,25 +74,6 @@
     sortSelect.addEventListener("change", () => {
       activeSort = sortSelect.value;
       renderFilteredList();
-    });
-  }
-
-  function buildCategoryFilters() {
-    const host = document.getElementById("category-filters");
-    const options = ["", ...CATEGORIES];
-    host.innerHTML = options
-      .map(
-        (c) =>
-          `<button type="button" class="filter-chip${c === "" ? " active" : ""}" data-category="${escapeHtml(c)}">${c === "" ? "전체" : escapeHtml(c)}</button>`
-      )
-      .join("");
-
-    host.querySelectorAll(".filter-chip").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        activeCategory = btn.dataset.category;
-        host.querySelectorAll(".filter-chip").forEach((b) => b.classList.toggle("active", b === btn));
-        renderFilteredList();
-      });
     });
   }
 
@@ -103,10 +85,9 @@
     return profileCache.get(uid);
   }
 
-  // 문서 목록 + 표시에 필요한 부가 정보(작성자 표시명/추천 수/댓글 수)를 한 번만 불러와 캐시해둔다.
-  // 곽과장의 연구기록(isGwak) 문서는 이 메인 목록에는 나오지 않고 research.html에만 쌓인다.
+  // 이 탭에는 isGwak === true 문서만 쌓인다. index.html(메인 문서 목록)에는 나오지 않는다.
   async function loadDocs() {
-    const docs = (await listDocuments()).filter((d) => !d.isGwak);
+    const docs = (await listDocuments()).filter((d) => d.isGwak);
     allDocs = await Promise.all(
       docs.map(async (d, i) => {
         const [authorProfile, likeCount, commentCount] = await Promise.all([
@@ -119,7 +100,7 @@
           authorDisplay: displayAuthorName(viewerProfile, authorProfile),
           likeCount,
           commentCount,
-          _order: i, // listDocuments()가 이미 최신순으로 정렬해서 주므로, 그 순서를 "최신순" 기준으로 그대로 쓴다
+          _order: i,
         };
       })
     );
@@ -145,14 +126,10 @@
     const host = document.getElementById("doc-list");
     const keyword = searchInput.value.trim().toLowerCase();
 
-    const filtered = allDocs.filter((d) => {
-      const matchesCategory = !activeCategory || getDocCategories(d).includes(activeCategory);
-      const matchesKeyword = !keyword || (d.title || "").toLowerCase().includes(keyword);
-      return matchesCategory && matchesKeyword;
-    });
+    const filtered = allDocs.filter((d) => !keyword || (d.title || "").toLowerCase().includes(keyword));
 
     if (allDocs.length === 0) {
-      host.innerHTML = '<p class="empty">아직 기록된 괴담이 없습니다. 첫 문서를 작성해보세요.</p>';
+      host.innerHTML = '<p class="empty">아직 기록된 연구 기록이 없습니다.</p>';
       return;
     }
     if (filtered.length === 0) {

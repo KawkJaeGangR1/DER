@@ -212,6 +212,10 @@ a {
   margin-top: 0;
 }
 
+.list-page-head .primary-button {
+  margin-top: 8px;
+}
+
 .list-controls {
   display: flex;
   flex-direction: column;
@@ -226,6 +230,28 @@ a {
   padding: 10px 14px;
   border-radius: 6px;
   font-size: 0.95rem;
+}
+
+.list-controls-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.list-controls-row .search-input {
+  flex: 1;
+  min-width: 160px;
+}
+
+.sort-select {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
 }
 
 .category-filters {
@@ -314,6 +340,13 @@ a {
 
 .doc-tag.tag-mumyeong {
   color: #6b3fa0;
+}
+
+/* 하위 분류 태그 배지 — 상위 태그(실선 테두리)와 구분되도록 점선 테두리 + 옅은 색으로 */
+.doc-tag.doc-tag-sub {
+  color: var(--paper-meta);
+  border-style: dashed;
+  font-weight: 600;
 }
 
 .doc-title {
@@ -523,6 +556,44 @@ a {
   padding: 10px 12px;
   border-radius: 4px;
   font-size: 1rem;
+}
+
+/* 분류/하위태그 체크박스: 다중 선택 가능하다는 걸 보여주는 칩 형태 */
+.category-check-group,
+.subcategory-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.check-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--ink-dim);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.check-chip:has(input:checked) {
+  border-color: var(--accent);
+  color: var(--ink);
+  background: rgba(192, 57, 43, 0.12);
+}
+
+.check-chip input {
+  accent-color: var(--accent);
+  margin: 0;
+}
+
+.subcategory-group {
+  margin-top: 14px;
 }
 
 .editor-toolbar {

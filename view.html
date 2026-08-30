@@ -19,6 +19,7 @@
     <div class="like-section-left">
       <button id="like-btn" class="like-button">추천 <span id="like-count">0</span></button>
       <a id="twitter-share" class="share-button" href="#" target="_blank" rel="noopener noreferrer">트위터에 공유</a>
+      <button id="export-image-btn" type="button" class="share-button">이미지로 저장</button>
     </div>
     <span id="doc-owner-actions" class="owner-actions" hidden>
       <a id="edit-link" href="#">수정</a>
@@ -35,9 +36,10 @@
   </section>
 </main>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script type="module">
   import { getUserProfile, isAdminProfile } from "./firebase-init.js";
-  import { mountHeader, displayAuthorName, formatDate, escapeHtml, categoryBadge } from "./common.js";
+  import { mountHeader, displayAuthorName, formatDate, escapeHtml, categoryBadges } from "./common.js";
   import {
     getDocument,
     getLikeCount,
@@ -67,6 +69,8 @@
   const ownerActions = document.getElementById("doc-owner-actions");
   const editLink = document.getElementById("edit-link");
   const twitterShare = document.getElementById("twitter-share");
+  const exportImageBtn = document.getElementById("export-image-btn");
+  let currentDocData = null;
 
   const profileCache = new Map();
   async function profileFor(uid) {
@@ -97,14 +101,16 @@
       article.innerHTML = '<p class="empty">삭제되었거나 존재하지 않는 문서입니다.</p>';
       likeBtn.hidden = true;
       twitterShare.hidden = true;
+      exportImageBtn.hidden = true;
       commentForm.hidden = true;
       return;
     }
+    currentDocData = docData;
     const authorProfile = await profileFor(docData.authorUid);
     const author = displayAuthorName(currentProfile, authorProfile);
 
     article.innerHTML = `
-      ${categoryBadge(docData.category)}
+      ${categoryBadges(docData)}
       ${docData.code ? `<div class="doc-code">${escapeHtml(docData.code)}</div>` : ""}
       <h1 class="doc-title">${escapeHtml(docData.title || "(제목 없음)")}</h1>
       <div class="doc-meta">
@@ -133,6 +139,39 @@
     likeCountEl.textContent = count;
     likeBtn.classList.toggle("active", liked);
   }
+
+  // 본문(.doc-body)만 캡처해서 PNG로 내보낸다. 제목/태그/메타 정보는 이미지에 담지 않는다.
+  exportImageBtn.addEventListener("click", async () => {
+    const bodyEl = article.querySelector(".doc-body");
+    if (!bodyEl || typeof html2canvas !== "function") return;
+    exportImageBtn.disabled = true;
+    try {
+      const canvas = await html2canvas(bodyEl, {
+        backgroundColor: "#fbfaf7",
+        scale: Math.min(2, window.devicePixelRatio || 1),
+      });
+      await new Promise((resolve) => {
+        canvas.toBlob((blob) => {
+          if (!blob) { resolve(); return; }
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          const safeTitle = (currentDocData && currentDocData.title ? currentDocData.title : "괴담문서")
+            .replace(/[\\/:*?"<>|]/g, "_");
+          a.href = url;
+          a.download = `${safeTitle}.png`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          resolve();
+        }, "image/png");
+      });
+    } catch (err) {
+      alert("이미지로 저장하는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
+      exportImageBtn.disabled = false;
+    }
+  });
 
   likeBtn.addEventListener("click", async () => {
     likeBtn.disabled = true;

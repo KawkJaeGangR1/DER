@@ -35,11 +35,18 @@ service cloud.firestore {
     }
 
     // 괴담 문서
+    // isGwak(곽과장의 연구기록 전용 문서) 플래그는 관리자만 true로 만들거나,
+    // 이미 true인 문서를 계속 true로 유지하며 수정할 수 있다. 일반 유저는
+    // 자기 문서를 통해 isGwak을 true로 바꿔치기할 수 없다.
     match /documents/{docId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn()
-                    && request.resource.data.authorUid == request.auth.uid;
-      allow update, delete: if isSignedIn()
+                    && request.resource.data.authorUid == request.auth.uid
+                    && (request.resource.data.isGwak != true || isAdmin());
+      allow update: if isSignedIn()
+                    && (resource.data.authorUid == request.auth.uid || isAdmin())
+                    && ((request.resource.data.isGwak == true) == (resource.data.isGwak == true) || isAdmin());
+      allow delete: if isSignedIn()
                     && (resource.data.authorUid == request.auth.uid || isAdmin());
 
       // 추천(좋아요): 문서 ID = 유저 uid, 1인 1추천
