@@ -140,13 +140,15 @@
     likeBtn.classList.toggle("active", liked);
   }
 
-  // 본문(.doc-body)만 캡처해서 PNG로 내보낸다. 제목/태그/메타 정보는 이미지에 담지 않는다.
+  // 문서 전체(태그/코드/제목/본문)를 캡처하되, 작성자/날짜(.doc-meta)만 가려서 이미지에는 담지 않는다.
   exportImageBtn.addEventListener("click", async () => {
-    const bodyEl = article.querySelector(".doc-body");
-    if (!bodyEl || typeof html2canvas !== "function") return;
+    if (!article || typeof html2canvas !== "function") return;
+    const metaEl = article.querySelector(".doc-meta");
     exportImageBtn.disabled = true;
+    const prevMetaDisplay = metaEl ? metaEl.style.display : "";
     try {
-      const canvas = await html2canvas(bodyEl, {
+      if (metaEl) metaEl.style.display = "none";
+      const canvas = await html2canvas(article, {
         backgroundColor: "#fbfaf7",
         scale: Math.min(2, window.devicePixelRatio || 1),
       });
@@ -169,6 +171,7 @@
     } catch (err) {
       alert("이미지로 저장하는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
     } finally {
+      if (metaEl) metaEl.style.display = prevMetaDisplay;
       exportImageBtn.disabled = false;
     }
   });
